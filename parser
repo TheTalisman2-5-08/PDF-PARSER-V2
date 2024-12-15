@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Parser</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';</script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #000000 0%, #1a1a1a 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 4rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            opacity: 1;
+        }
+
+        .book-btn {
+            background: white;
+            color: black !important;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            opacity: 1 !important;
+        }
+
+        .hero {
+            padding: 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, #FFFFFF 0%, #B3B3B3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: #999;
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 600px;
+        }
+
+        .drop-zone {
+            width: 100%;
+            height: 150px;
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .drop-zone.drag-over {
+            border-color: #FFE600;
+            background: rgba(255,235,59,0.1);
+        }
+
+        #searchQuery {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 1rem;
+        }
+
+        #searchQuery::placeholder {
+            color: #999;
+        }
+
+        .primary-btn {
+            background: #FFE600;
+            color: black;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .primary-btn:hover {
+            background: #FFD600;
+        }
+
+        .results-section {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+
+        .summary-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-card h3 {
+            margin-bottom: 1rem;
+            color: #FFE600;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .metadata-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .metadata-item label {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .key-points {
+            list-style: none;
+        }
+
+        .key-points li {
+            margin-bottom: 0.5rem;
+            padding-left: 1rem;
+            position: relative;
+        }
+
+        .key-points li:before {
+            content: "•";
+            color: #FFE600;
+            position: absolute;
+            left: 0;
+        }
+
+        /* New styles for enhanced features */
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            background: rgba(255, 230, 0, 0.1);
+            color: #FFE600;
+            margin: 0.25rem;
+            font-size: 0.8rem;
+        }
+
+        .highlight {
+            background: rgba(255, 230, 0, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+        }
+
+        .section-list {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 1rem;
+        }
+
+        .section-list li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .section-list li:before {
+            content: "→";
+            color: #FFE600;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">PARSER</div>
+    </nav>
+
+    <div class="hero">
+        <h1>PDF parser<br>Summarize PDFs in an<br>Instant</h1>
+        <p>Simply drag and drop a PDF, or choose through the file explorer.<br>Upload the PDF, sit back and relax.</p>
+
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <div id="dropZone" class="drop-zone">
+                    <p class="drop-zone-text">Drag & drop your PDF here or click to browse</p>
+                    <p class="file-name" id="fileName"></p>
+                </div>
+                <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            </div>
+            <input type="text" id="searchQuery" placeholder="Enter keywords to search for...">
+            <button class="primary-btn" id="parseButton">Parse PDF</button>
+        </div>
+
+        <div class="results-section">
+            <div id="results">
+                <p>Upload a PDF to see results...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const parseButton = document.getElementById('parseButton');
+        const resultsDiv = document.getElementById('results');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('drag-over');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('drag-over');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type === 'application/pdf') {
+                    fileName.textContent = file.name;
+                    fileInput.files = files;
+                } else {
+                    fileName.textContent = 'Please select a PDF file';
+                    fileInput.value = '';
+                }
+            }
+        }
+
+        async function parsePDF(file) {
+            const searchQuery = document.getElementById('searchQuery').value.toLowerCase();
+            
+            try {
+                resultsDiv.innerHTML = '<p>Processing PDF...</p>';
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                let fullText = '';
+                let headings = [];
+                let keyTerms = new Map();
+                const numPages = pdf.numPages;
+
+                // Enhanced text extraction
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    let pageText = '';
+                    
+                    textContent.items.forEach(item => {
+                        // Detect potential headings
+                        if (item.str.length > 0 && item.str.length < 100) {
+                            if (item.str.match(/^[A-Z][A-Za-z\s]{2,}$/)) {
+                                headings.push(item.str.trim());
+                            }
+                            
+                            // Track key terms
+                            const words = item.str.split(/\s+/);
+                            words.forEach(word => {
+                                if (word.length > 4) {
+                                    const term = word.toLowerCase();
+                                    keyTerms.set(term, (keyTerms.get(term) || 0) + 1);
+                                }
+                            });
+                        }
+                        pageText += item.str + ' ';
+                    });
+                    
+                    fullText += pageText + '\n\n';
+                }
+
+                if (searchQuery) {
+                    const sentences = fullText.split(/[.!?]+/);
+                    const relevantSentences = sentences.filter(sentence => 
+                        sentence.toLowerCase().includes(searchQuery)
+                    );
+
+                    if (relevantSentences.length > 0) {
+                        resultsDiv.innerHTML = `
+                            <div class="summary-card">
+                                <h3>Search Results</h3>
+                                <p style="margin-bottom: 1rem">Found ${relevantSentences.length} matches for "${searchQuery}"</p>
+                                ${relevantSentences.map(sentence => `
+                                    <p style="margin-bottom: 0.75rem">
+                                        ${sentence.replace(
+                                            new RegExp(searchQuery, 'gi'),
+                                            match => `<span class="highlight">${match}</span>`
+                                        )}.
+                                    </p>
+                                `).join('')}
+                            </div>`;
+                    } else {
+                        resultsDiv.innerHTML = '<p style="color: #FFE600;">No matches found for your search query.</p>';
+                    }
+                } else {
+                    const words = fullText.split(/\s+/);
+                    const sentences = fullText.split(/[.!?]+/);
+                    const paragraphs = fullText.split(/\n\s*\n/);
+                    const avgWordsPerSentence = words.length / sentences.length;
+                    
+                    // Get key points (important sentences)
+                    const keyPoints = sentences.filter(sentence => 
+                        sentence.trim().match(/^(The|This|In|Our|It|We|They|Key|Important|Notable|Significant|Results|Conclusion|Analysis)/i)
+                    ).slice(0, 5);
+
+                    // Get most frequent terms
+                    const commonWords = new Set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with']);
+                    const topTerms = Array.from(keyTerms.entries())
+                        .filter(([term]) => !commonWords.has(term))
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 8);
+
+                    resultsDiv.innerHTML = `
+                        <div class="summary-card">
+                            <h3>Document Overview</h3>
+                            <div class="metadata-grid">
+                                <div class="metadata-item">
+                                    <label>Pages</label>
+                                    <span>${numPages}</span>
+                                </div>
+                                <div class="metadata-item">
+                                    <label>Word Count</label>
+                                    <span>${words.length.toLocaleString()}</span>
+                                </div>
+                                <div class="metadata-item">
+                                    <label>Paragraphs</label>
+                                    <span>${paragraphs.length}</span>
+                                </div>
+                                <div class="metadata-item">
+                                    <label>Sentences</label>
+                                    <span>${sentences.length}</span>
+                                </div>
+                                <div class="metadata-item">
+                                    <label>Avg. Words/Sentence</label>
+                                    <span>${avgWordsPerSentence.toFixed(1)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <h3>Key Points</h>
+                                <h3>Key Points</h3>
+                            <ul class="key-points">
+                                ${keyPoints.map(point => `<li>${point.trim()}.</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="summary-card">
+                            <h3>Document Structure</h3>
+                            <div style="margin-bottom: 1rem;">
+                                ${headings.slice(0, 6).map(heading => 
+                                    `<div class="tag">${heading}</div>`
+                                ).join('')}
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <h3>Frequent Terms</h3>
+                            <div style="margin: 1rem 0;">
+                                ${topTerms.map(([term, count]) => 
+                                    `<span class="tag">${term} (${count})</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <h3>Content Analysis</h3>
+                            <ul class="section-list">
+                                <li>Document complexity: ${avgWordsPerSentence > 20 ? 'High' : avgWordsPerSentence > 15 ? 'Medium' : 'Low'}</li>
+                                <li>Text density: ${words.length / numPages > 500 ? 'High' : words.length / numPages > 300 ? 'Medium' : 'Low'}</li>
+                                <li>Structure: ${paragraphs.length / numPages > 5 ? 'Well-segmented' : 'Continuous'}</li>
+                            </ul>
+                        </div>
+
+                        <div class="summary-card">
+                            <h3>Document Preview</h3>
+                            <p>${fullText.substring(0, 500)}...</p>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: #ff4444;">Error processing PDF: ${error.message}</p>`;
+            }
+        }
+
+        parseButton.addEventListener('click', () => {
+            if (!fileInput.files.length) {
+                resultsDiv.innerHTML = '<p style="color: #ff4444;">Please select a PDF file first.</p>';
+                return;
+            }
+            parsePDF(fileInput.files[0]);
+        });
+    </script>
+</body>
+</html>
